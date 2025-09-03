@@ -1,0 +1,329 @@
+import React, { useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+
+// Single-file React component demo
+// Drop this file into a Vite/CRA project (e.g. src/SuperbikeDashboard.jsx)
+// Tailwind CSS must be enabled in the project for styling to work.
+
+const SAMPLE_BIKES = [
+  {
+    id: 1,
+    brand: "Ducati",
+    model: "Panigale V4",
+    year: 2022,
+    price: 26995,
+    mileage: 1200,
+    hp: 214,
+    topSpeed: 300,
+    location: "Milano, IT",
+    image:
+      "https://images.unsplash.com/photo-1516014674502-4b3e9de5d6a6?q=80&w=1400&auto=format&fit=crop&ixlib=rb-4.0.3&s=1b1d9d1b2b6a7b3a8c2f3d6e7f8a9b0c",
+    tags: ["track-ready", "low-mileage"],
+  },
+  {
+    id: 2,
+    brand: "Yamaha",
+    model: "YZF-R1",
+    year: 2021,
+    price: 18999,
+    mileage: 5400,
+    hp: 200,
+    topSpeed: 295,
+    location: "Tokyo, JP",
+    image:
+      "https://images.unsplash.com/photo-1522337660859-02fbefca4702?q=80&w=1400&auto=format&fit=crop&ixlib=rb-4.0.3&s=7a2f1e9d8f0a6a4d2a3c5b6e7f8d9c0b",
+    tags: ["street-legal", "well-maintained"],
+  },
+  {
+    id: 3,
+    brand: "Kawasaki",
+    model: "Ninja H2",
+    year: 2020,
+    price: 29999,
+    mileage: 890,
+    hp: 231,
+    topSpeed: 330,
+    location: "Los Angeles, US",
+    image:
+      "https://images.unsplash.com/photo-1490262040052-8b6b817a8e9f?q=80&w=1400&auto=format&fit=crop&ixlib=rb-4.0.3&s=3c5f6a9b2d1e4f5a6b7c8d9e0f1a2b3c",
+    tags: ["supercharged", "collector"],
+  },
+  {
+    id: 4,
+    brand: "BMW",
+    model: "S1000RR",
+    year: 2023,
+    price: 19995,
+    mileage: 300,
+    hp: 205,
+    topSpeed: 290,
+    location: "Munich, DE",
+    image:
+      "https://images.unsplash.com/photo-1549921296-3c8c6a4b6c76?q=80&w=1400&auto=format&fit=crop&ixlib=rb-4.0.3&s=6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c",
+    tags: ["new-arrival"],
+  },
+  {
+    id: 5,
+    brand: "Aprilia",
+    model: "RSV4",
+    year: 2019,
+    price: 15950,
+    mileage: 7200,
+    hp: 201,
+    topSpeed: 285,
+    location: "Barcelona, ES",
+    image:
+      "https://images.unsplash.com/photo-1520975917567-3f1b2b8b6ad6?q=80&w=1400&auto=format&fit=crop&ixlib=rb-4.0.3&s=0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d",
+    tags: ["race-kit", "well-kept"],
+  },
+];
+
+export default function SuperbikeDashboard() {
+  const [query, setQuery] = useState("");
+  const [brandFilter, setBrandFilter] = useState("All");
+  const [sortBy, setSortBy] = useState("price-asc");
+  const [selected, setSelected] = useState(null);
+
+  const brands = useMemo(() => {
+    const setB = new Set(SAMPLE_BIKES.map((b) => b.brand));
+    return ["All", ...Array.from(setB)];
+  }, []);
+
+  const filtered = useMemo(() => {
+    let list = SAMPLE_BIKES.filter((b) => {
+      const q = query.trim().toLowerCase();
+      const matchesQuery =
+        q === "" ||
+        b.brand.toLowerCase().includes(q) ||
+        b.model.toLowerCase().includes(q) ||
+        b.location.toLowerCase().includes(q);
+      const matchesBrand = brandFilter === "All" || b.brand === brandFilter;
+      return matchesQuery && matchesBrand;
+    });
+
+    if (sortBy === "price-asc") list = list.sort((a, b) => a.price - b.price);
+    if (sortBy === "price-desc") list = list.sort((a, b) => b.price - a.price);
+    if (sortBy === "year-desc") list = list.sort((a, b) => b.year - a.year);
+    if (sortBy === "mileage-asc") list = list.sort((a, b) => a.mileage - b.mileage);
+
+    return list;
+  }, [query, brandFilter, sortBy]);
+
+  // Data for chart: count of bikes per brand
+  const chartData = useMemo(() => {
+    const map = {};
+    SAMPLE_BIKES.forEach((b) => (map[b.brand] = (map[b.brand] || 0) + 1));
+    return Object.entries(map).map(([brand, count]) => ({ brand, count }));
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-slate-50 p-6">
+      <header className="max-w-7xl mx-auto mb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-extrabold">Superbike Marketplace — Demo</h1>
+            <p className="text-sm text-slate-600">Browse, filter and inspect superbikes available for sale.</p>
+          </div>
+          <div className="flex gap-3 items-center">
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search by brand / model / location"
+              className="px-3 py-2 border rounded-lg shadow-sm w-80 focus:outline-none"
+            />
+            <button
+              onClick={() => {
+                setQuery("");
+                setBrandFilter("All");
+                setSortBy("price-asc");
+              }}
+              className="px-4 py-2 bg-slate-800 text-white rounded-lg shadow hover:opacity-90"
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Left column: controls + chart */}
+        <aside className="lg:col-span-1 bg-white rounded-2xl p-4 shadow">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold">Filters</h3>
+            <label className="block mt-3 text-sm">Brand</label>
+            <select
+              value={brandFilter}
+              onChange={(e) => setBrandFilter(e.target.value)}
+              className="mt-2 w-full p-2 border rounded-lg"
+            >
+              {brands.map((b) => (
+                <option key={b} value={b}>
+                  {b}
+                </option>
+              ))}
+            </select>
+
+            <label className="block mt-3 text-sm">Sort</label>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="mt-2 w-full p-2 border rounded-lg"
+            >
+              <option value="price-asc">Price: Low → High</option>
+              <option value="price-desc">Price: High → Low</option>
+              <option value="year-desc">Year: New → Old</option>
+              <option value="mileage-asc">Mileage: Low → High</option>
+            </select>
+          </div>
+
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold">Market snapshot</h3>
+            <div style={{ width: "100%", height: 200 }} className="mt-3">
+              <ResponsiveContainer>
+                <BarChart data={chartData}>
+                  <XAxis dataKey="brand" />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                  <Bar dataKey="count" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </aside>
+
+        {/* Right column: list */}
+        <section className="lg:col-span-3">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-xl font-bold">Available Superbikes ({filtered.length})</h2>
+            <div className="text-sm text-slate-600">Updated demo data • client-side only</div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {filtered.map((bike) => (
+              <motion.article
+                key={bike.id}
+                layout
+                whileHover={{ translateY: -4 }}
+                className="bg-white rounded-2xl overflow-hidden shadow p-0"
+              >
+                <div className="flex gap-4">
+                  <img src={bike.image} alt={bike.model} className="w-44 h-32 object-cover" />
+                  <div className="p-4 flex-1">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="text-lg font-semibold">{bike.brand} {bike.model}</h3>
+                        <p className="text-sm text-slate-500">{bike.year} • {bike.location}</p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xl font-bold">${bike.price.toLocaleString()}</div>
+                        <div className="text-xs text-slate-500">{bike.mileage.toLocaleString()} mi</div>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex items-center gap-2">
+                      <span className="text-xs px-2 py-1 rounded-full border">{bike.hp} HP</span>
+                      <span className="text-xs px-2 py-1 rounded-full border">{bike.topSpeed} km/h</span>
+                      {bike.tags.map((t) => (
+                        <span key={t} className="text-xs px-2 py-1 rounded-full bg-slate-100">{t}</span>
+                      ))}
+                    </div>
+
+                    <div className="mt-4 flex gap-2">
+                      <button
+                        onClick={() => setSelected(bike)}
+                        className="px-3 py-2 bg-emerald-600 text-white rounded-lg shadow-sm"
+                      >
+                        View
+                      </button>
+                      <button
+                        onClick={() => alert(`Contact seller for ${bike.brand} ${bike.model}`)}
+                        className="px-3 py-2 border rounded-lg"
+                      >
+                        Contact
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </motion.article>
+            ))}
+          </div>
+        </section>
+      </main>
+
+      {/* Modal / drawer for selected bike */}
+      {selected && (
+        <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setSelected(null)} />
+          <motion.div
+            initial={{ y: 40, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 40, opacity: 0 }}
+            className="relative z-10 w-full lg:w-3/4 bg-white rounded-2xl shadow-lg overflow-hidden"
+          >
+            <div className="flex gap-6 p-6">
+              <img src={selected.image} alt={selected.model} className="w-80 h-52 object-cover rounded-lg" />
+              <div className="flex-1">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-2xl font-bold">{selected.brand} {selected.model}</h3>
+                    <p className="text-sm text-slate-600">{selected.year} • {selected.location}</p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-extrabold">${selected.price.toLocaleString()}</div>
+                    <div className="text-sm text-slate-500">{selected.mileage.toLocaleString()} mi</div>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="text-xs text-slate-500">Horsepower</div>
+                    <div className="font-semibold">{selected.hp} HP</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-slate-500">Top Speed</div>
+                    <div className="font-semibold">{selected.topSpeed} km/h</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-slate-500">Tags</div>
+                    <div className="flex gap-2 mt-1">
+                      {selected.tags.map((t) => (
+                        <span key={t} className="text-xs px-2 py-1 rounded-full bg-slate-100">{t}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-slate-500">Location</div>
+                    <div className="font-semibold">{selected.location}</div>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex gap-3">
+                  <button
+                    onClick={() => alert('Reserve request sent (demo)')}
+                    className="px-4 py-2 bg-emerald-600 text-white rounded-lg"
+                  >
+                    Reserve
+                  </button>
+                  <button
+                    onClick={() => setSelected(null)}
+                    className="px-4 py-2 border rounded-lg"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </div>
+  );
+}
